@@ -49,6 +49,7 @@ jobs:
             --enable-small \
             --disable-avdevice \
             --disable-avfilter \
+            --disable-vulkan \
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
@@ -76,6 +77,7 @@ jobs:
             --enable-small \
             --disable-avdevice \
             --disable-avfilter \
+            --disable-vulkan \
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
