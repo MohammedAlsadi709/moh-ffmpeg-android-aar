@@ -38,6 +38,7 @@ jobs:
 
           export ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME
           TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64
+          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
