@@ -10,7 +10,7 @@ jobs:
     steps:
       # 1. سحب المشروع
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 2. تثبيت NDK
       - name: Install NDK
@@ -53,6 +53,7 @@ jobs:
             --disable-doc \
             --disable-programs \
             --enable-small \
+            --disable-avdevice \
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
@@ -73,6 +74,7 @@ jobs:
             --disable-doc \
             --disable-programs \
             --enable-small \
+            --disable-avdevice \
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
