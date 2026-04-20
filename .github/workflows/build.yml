@@ -8,37 +8,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. سحب المشروع
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. تثبيت NDK
       - name: Install NDK
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r26
 
-      # 3. تثبيت الأدوات
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install -y git build-essential yasm
 
-      # 4. تحميل FFmpeg 6.0
       - name: Clone FFmpeg
         run: |
           git clone https://github.com/ffmpeg/ffmpeg.git
           cd ffmpeg
           git checkout n6.0
 
-      # 5. Build للمعماريات
       - name: Build FFmpeg (arm64 + armv7)
         run: |
           cd ffmpeg
 
           export ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME
           TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64
-          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
@@ -59,7 +53,9 @@ jobs:
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
-          make install
+          mkdir -p output/arm64/lib
+          cp lib*.so output/arm64/lib/
+
           make clean
 
           # ---------- armv7 ----------
@@ -81,9 +77,9 @@ jobs:
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
-          make install
+          mkdir -p output/armv7/lib
+          cp lib*.so output/armv7/lib/
 
-      # 6. رفع النتيجة
       - name: Upload FFmpeg libs
         uses: actions/upload-artifact@v4
         with:
