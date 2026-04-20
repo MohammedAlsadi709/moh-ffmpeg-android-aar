@@ -38,7 +38,6 @@ jobs:
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
 
           ./configure \
-            --prefix=$(pwd)/output/arm64 \
             --target-os=android \
             --arch=arm64 \
             --enable-cross-compile \
@@ -53,8 +52,12 @@ jobs:
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
+
           mkdir -p output/arm64/lib
-          cp lib*.so output/arm64/lib/
+          cp libavcodec/*.so output/arm64/lib/
+          cp libavformat/*.so output/arm64/lib/
+          cp libavutil/*.so output/arm64/lib/
+          cp libswscale/*.so output/arm64/lib/
 
           make clean
 
@@ -62,7 +65,6 @@ jobs:
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi21-clang
 
           ./configure \
-            --prefix=$(pwd)/output/armv7 \
             --target-os=android \
             --arch=arm \
             --enable-cross-compile \
@@ -77,8 +79,12 @@ jobs:
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
+
           mkdir -p output/armv7/lib
-          cp lib*.so output/armv7/lib/
+          cp libavcodec/*.so output/armv7/lib/
+          cp libavformat/*.so output/armv7/lib/
+          cp libavutil/*.so output/armv7/lib/
+          cp libswscale/*.so output/armv7/lib/
 
       - name: Upload FFmpeg libs
         uses: actions/upload-artifact@v4
