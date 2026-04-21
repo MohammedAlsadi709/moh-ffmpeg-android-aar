@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (Optimized)
+name: Build FFmpeg Android (Optimized Stable)
 
 on:
   workflow_dispatch:
@@ -21,21 +21,13 @@ jobs:
           sudo apt update
           sudo apt install -y git build-essential yasm pkg-config
 
-      # 🔽 مهم: libmp3lame
-      - name: Build LAME (mp3)
-        run: |
-          git clone https://github.com/rbrito/lame.git
-          cd lame
-          ./configure --disable-shared --enable-static
-          make -j4
-
       - name: Clone FFmpeg
         run: |
           git clone https://github.com/ffmpeg/ffmpeg.git
           cd ffmpeg
           git checkout n6.0
 
-      - name: Build FFmpeg (Minimal)
+      - name: Build FFmpeg (Minimal Working)
         run: |
           cd ffmpeg
 
@@ -49,13 +41,13 @@ jobs:
           --enable-shared \
           --disable-doc \
           --disable-programs \
-          --disable-everything \
           --enable-small \
           --enable-avcodec \
           --enable-avformat \
           --enable-avutil \
           --enable-swresample \
           --enable-swscale \
+          --enable-avfilter \
           --enable-filter=volume \
           --enable-filter=apulsator \
           --enable-filter=amix \
@@ -66,10 +58,9 @@ jobs:
           --enable-demuxer=mp3 \
           --enable-muxer=mp3 \
           --enable-decoder=mp3 \
-          --enable-encoder=libmp3lame \
-          --enable-libmp3lame \
-          --extra-cflags=-I../lame/include \
-          --extra-ldflags=-L../lame/lib \
+          --enable-encoder=mp3 \
+          --disable-vulkan \
+          --disable-avdevice \
           --extra-ldflags='-Wl,-z,max-page-size=16384'"
 
           # ---------- arm64 ----------
