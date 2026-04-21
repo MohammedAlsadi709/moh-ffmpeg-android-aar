@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (Clean Stable)
+name: Build FFmpeg Android (Final Stable Fixed)
 
 on:
   workflow_dispatch:
@@ -36,6 +36,7 @@ jobs:
 
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
+          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           ./configure \
             --prefix=$(pwd)/out/arm64 \
@@ -75,6 +76,7 @@ jobs:
 
           # ---------- armv7 ----------
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi21-clang
+          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           ./configure \
             --prefix=$(pwd)/out/armv7 \
@@ -87,34 +89,4 @@ jobs:
             --disable-programs \
             --disable-doc \
             --enable-small \
-            --enable-avcodec \
-            --enable-avformat \
-            --enable-avutil \
-            --enable-swresample \
-            --enable-swscale \
-            --enable-avfilter \
-            --enable-filter=volume \
-            --enable-filter=apulsator \
-            --enable-filter=amix \
-            --enable-filter=concat \
-            --enable-filter=atrim \
-            --enable-filter=adelay \
-            --enable-protocol=file \
-            --enable-demuxer=mp3 \
-            --enable-muxer=mp3 \
-            --enable-decoder=mp3 \
-            --enable-encoder=mp3 \
-            --disable-vulkan \
-            --disable-avdevice \
-            --extra-ldflags="-Wl,-z,max-page-size=16384"
-
-          make -j4
-          make install
-
-      - name: Upload FFmpeg libs
-        uses: actions/upload-artifact@v4
-        with:
-          name: ffmpeg-libs-optimized
-          path: |
-            ffmpeg/out/arm64/lib/*.so
-            ffmpeg/out/armv7/lib/*.so
+            --
