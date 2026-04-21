@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (Step 1)
+name: Build FFmpeg Android (Optimized)
 
 on:
   workflow_dispatch:
@@ -19,7 +19,15 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git build-essential yasm
+          sudo apt install -y git build-essential yasm pkg-config
+
+      # 🔽 مهم: libmp3lame
+      - name: Build LAME (mp3)
+        run: |
+          git clone https://github.com/rbrito/lame.git
+          cd lame
+          ./configure --disable-shared --enable-static
+          make -j4
 
       - name: Clone FFmpeg
         run: |
@@ -27,30 +35,50 @@ jobs:
           cd ffmpeg
           git checkout n6.0
 
-      - name: Build FFmpeg (arm64 + armv7)
+      - name: Build FFmpeg (Minimal)
         run: |
           cd ffmpeg
 
           export ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME
           TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64
 
+          COMMON_FLAGS="\
+          --target-os=android \
+          --enable-cross-compile \
+          --disable-static \
+          --enable-shared \
+          --disable-doc \
+          --disable-programs \
+          --disable-everything \
+          --enable-small \
+          --enable-avcodec \
+          --enable-avformat \
+          --enable-avutil \
+          --enable-swresample \
+          --enable-swscale \
+          --enable-filter=volume \
+          --enable-filter=apulsator \
+          --enable-filter=amix \
+          --enable-filter=concat \
+          --enable-filter=atrim \
+          --enable-filter=adelay \
+          --enable-protocol=file \
+          --enable-demuxer=mp3 \
+          --enable-muxer=mp3 \
+          --enable-decoder=mp3 \
+          --enable-encoder=libmp3lame \
+          --enable-libmp3lame \
+          --extra-cflags=-I../lame/include \
+          --extra-ldflags=-L../lame/lib \
+          --extra-ldflags='-Wl,-z,max-page-size=16384'"
+
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
 
           ./configure \
-            --target-os=android \
             --arch=arm64 \
-            --enable-cross-compile \
             --cc=$CC \
-            --disable-static \
-            --enable-shared \
-            --disable-doc \
-            --disable-programs \
-            --enable-small \
-            --disable-avdevice \
-            --disable-avfilter \
-            --disable-vulkan \
-            --extra-ldflags="-Wl,-z,max-page-size=16384"
+            $COMMON_FLAGS
 
           make -j4
 
@@ -58,7 +86,7 @@ jobs:
           cp libavcodec/*.so output/arm64/lib/
           cp libavformat/*.so output/arm64/lib/
           cp libavutil/*.so output/arm64/lib/
-          cp libswscale/*.so output/arm64/lib/
+          cp libswresample/*.so output/arm64/lib/
 
           make clean
 
@@ -66,19 +94,9 @@ jobs:
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi21-clang
 
           ./configure \
-            --target-os=android \
             --arch=arm \
-            --enable-cross-compile \
             --cc=$CC \
-            --disable-static \
-            --enable-shared \
-            --disable-doc \
-            --disable-programs \
-            --enable-small \
-            --disable-avdevice \
-            --disable-avfilter \
-            --disable-vulkan \
-            --extra-ldflags="-Wl,-z,max-page-size=16384"
+            $COMMON_FLAGS
 
           make -j4
 
@@ -86,12 +104,12 @@ jobs:
           cp libavcodec/*.so output/armv7/lib/
           cp libavformat/*.so output/armv7/lib/
           cp libavutil/*.so output/armv7/lib/
-          cp libswscale/*.so output/armv7/lib/
+          cp libswresample/*.so output/armv7/lib/
 
       - name: Upload FFmpeg libs
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-libs
+          name: ffmpeg-libs-optimized
           path: |
             ffmpeg/output/arm64/lib/*.so
             ffmpeg/output/armv7/lib/*.so
