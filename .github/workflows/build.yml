@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (FINAL CLEAN FIX)
+name: Build FFmpeg Android (FINAL STABLE)
 
 on:
   workflow_dispatch:
@@ -60,6 +60,7 @@ jobs:
             --disable-doc \
             --enable-gpl \
             --enable-version3 \
+            --disable-vulkan \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -106,6 +107,7 @@ jobs:
             --disable-doc \
             --enable-gpl \
             --enable-version3 \
+            --disable-vulkan \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
