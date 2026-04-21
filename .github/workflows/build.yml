@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (Final No Install)
+name: Build FFmpeg Android (FULL 16KB)
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git build-essential yasm pkg-config
+          sudo apt install -y git build-essential yasm pkg-config nasm
 
       - name: Clone FFmpeg
         run: |
@@ -34,39 +34,41 @@ jobs:
           export NDK=$ANDROID_NDK_LATEST_HOME
           TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
 
+          COMMON_FLAGS="\
+          --target-os=android \
+          --enable-cross-compile \
+          --disable-static \
+          --enable-shared \
+          --disable-programs \
+          --disable-doc \
+          --enable-gpl \
+          --enable-version3 \
+          --enable-small \
+          --enable-avcodec \
+          --enable-avformat \
+          --enable-avutil \
+          --enable-swresample \
+          --enable-swscale \
+          --enable-avfilter \
+          --enable-postproc \
+          --enable-network \
+          --enable-protocols \
+          --enable-demuxers \
+          --enable-muxers \
+          --enable-encoders \
+          --enable-decoders \
+          --enable-parsers \
+          --enable-filters \
+          --enable-bsfs \
+          --extra-ldflags='-Wl,-z,max-page-size=16384'"
+
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
 
           ./configure \
-            --target-os=android \
+            $COMMON_FLAGS \
             --arch=aarch64 \
-            --cc=$CC \
-            --enable-cross-compile \
-            --disable-static \
-            --enable-shared \
-            --disable-programs \
-            --disable-doc \
-            --enable-small \
-            --enable-avcodec \
-            --enable-avformat \
-            --enable-avutil \
-            --enable-swresample \
-            --enable-swscale \
-            --enable-avfilter \
-            --enable-filter=volume \
-            --enable-filter=apulsator \
-            --enable-filter=amix \
-            --enable-filter=concat \
-            --enable-filter=atrim \
-            --enable-filter=adelay \
-            --enable-protocol=file \
-            --enable-demuxer=mp3 \
-            --enable-muxer=mp3 \
-            --enable-decoder=mp3 \
-            --enable-encoder=mp3 \
-            --disable-vulkan \
-            --disable-avdevice \
-            --extra-ldflags="-Wl,-z,max-page-size=16384"
+            --cc=$CC
 
           make -j4
 
@@ -75,6 +77,8 @@ jobs:
           cp libavformat/*.so output/arm64/lib/
           cp libavutil/*.so output/arm64/lib/
           cp libswresample/*.so output/arm64/lib/
+          cp libswscale/*.so output/arm64/lib/
+          cp libavfilter/*.so output/arm64/lib/
 
           make clean
 
@@ -82,35 +86,9 @@ jobs:
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi21-clang
 
           ./configure \
-            --target-os=android \
+            $COMMON_FLAGS \
             --arch=arm \
-            --cc=$CC \
-            --enable-cross-compile \
-            --disable-static \
-            --enable-shared \
-            --disable-programs \
-            --disable-doc \
-            --enable-small \
-            --enable-avcodec \
-            --enable-avformat \
-            --enable-avutil \
-            --enable-swresample \
-            --enable-swscale \
-            --enable-avfilter \
-            --enable-filter=volume \
-            --enable-filter=apulsator \
-            --enable-filter=amix \
-            --enable-filter=concat \
-            --enable-filter=atrim \
-            --enable-filter=adelay \
-            --enable-protocol=file \
-            --enable-demuxer=mp3 \
-            --enable-muxer=mp3 \
-            --enable-decoder=mp3 \
-            --enable-encoder=mp3 \
-            --disable-vulkan \
-            --disable-avdevice \
-            --extra-ldflags="-Wl,-z,max-page-size=16384"
+            --cc=$CC
 
           make -j4
 
@@ -119,11 +97,13 @@ jobs:
           cp libavformat/*.so output/armv7/lib/
           cp libavutil/*.so output/armv7/lib/
           cp libswresample/*.so output/armv7/lib/
+          cp libswscale/*.so output/armv7/lib/
+          cp libavfilter/*.so output/armv7/lib/
 
       - name: Upload FFmpeg libs
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-libs-optimized
+          name: ffmpeg-libs-full
           path: |
             ffmpeg/output/arm64/lib/*.so
             ffmpeg/output/armv7/lib/*.so
