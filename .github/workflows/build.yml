@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (FULL 16KB FIXED)
+name: Build FFmpeg Android (FULL 16KB FINAL FIX)
 
 on:
   workflow_dispatch:
@@ -11,15 +11,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install NDK
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r26
+      # ✅ تثبيت NDK بشكل صريح
+      - name: Install NDK r26
+        run: |
+          ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          mkdir -p $ANDROID_SDK_ROOT/ndk
+
+          cd $ANDROID_SDK_ROOT/ndk
+          wget https://dl.google.com/android/repository/android-ndk-r26d-linux.zip
+          unzip android-ndk-r26d-linux.zip
+          mv android-ndk-r26d r26
 
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git build-essential yasm pkg-config nasm
+          sudo apt install -y git build-essential yasm pkg-config nasm unzip wget
 
       - name: Clone FFmpeg
         run: |
@@ -31,10 +37,10 @@ jobs:
         run: |
           cd ffmpeg
 
-          export NDK=$ANDROID_NDK_HOME
+          # ✅ استخدام NDK محدد يدويًا (بدون أي متغيرات غامضة)
+          export NDK=/usr/local/lib/android/sdk/ndk/r26
           TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           export API=21
-
           export SYSROOT=$TOOLCHAIN/sysroot
 
           COMMON_FLAGS="\
@@ -70,7 +76,6 @@ jobs:
           export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
           export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
           export AR=$TOOLCHAIN/bin/llvm-ar
-          export AS=$CC
           export NM=$TOOLCHAIN/bin/llvm-nm
           export STRIP=$TOOLCHAIN/bin/llvm-strip
           export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
@@ -100,7 +105,6 @@ jobs:
           # ---------- armv7 ----------
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
           export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
-          export AS=$CC
 
           ./configure \
             $COMMON_FLAGS \
