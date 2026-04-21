@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (FULL 16KB)
+name: Build FFmpeg Android (FULL 16KB FIXED)
 
 on:
   workflow_dispatch:
@@ -31,20 +31,16 @@ jobs:
         run: |
           cd ffmpeg
 
-          # ✅ FIX: استخدام النسخة الصحيحة من NDK
           export NDK=$ANDROID_NDK_HOME
           TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           export API=21
 
-          # أدوات إضافية (تحل مشاكل linking)
-          export AR=$TOOLCHAIN/bin/llvm-ar
-          export AS=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
-          export LD=$TOOLCHAIN/bin/ld
-          export STRIP=$TOOLCHAIN/bin/llvm-strip
+          export SYSROOT=$TOOLCHAIN/sysroot
 
           COMMON_FLAGS="\
           --target-os=android \
           --enable-cross-compile \
+          --sysroot=$SYSROOT \
           --disable-static \
           --enable-shared \
           --disable-programs \
@@ -72,11 +68,22 @@ jobs:
 
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
+          export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
+          export AR=$TOOLCHAIN/bin/llvm-ar
+          export AS=$CC
+          export NM=$TOOLCHAIN/bin/llvm-nm
+          export STRIP=$TOOLCHAIN/bin/llvm-strip
+          export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
 
           ./configure \
             $COMMON_FLAGS \
             --arch=aarch64 \
-            --cc=$CC
+            --cc=$CC \
+            --cxx=$CXX \
+            --cross-prefix=$TOOLCHAIN/bin/aarch64-linux-android- \
+            --nm=$NM \
+            --ranlib=$RANLIB \
+            --strip=$STRIP
 
           make -j4
 
@@ -92,11 +99,18 @@ jobs:
 
           # ---------- armv7 ----------
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
+          export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
+          export AS=$CC
 
           ./configure \
             $COMMON_FLAGS \
             --arch=arm \
-            --cc=$CC
+            --cc=$CC \
+            --cxx=$CXX \
+            --cross-prefix=$TOOLCHAIN/bin/arm-linux-androideabi- \
+            --nm=$NM \
+            --ranlib=$RANLIB \
+            --strip=$STRIP
 
           make -j4
 
