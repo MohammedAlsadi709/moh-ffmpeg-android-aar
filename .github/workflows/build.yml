@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (Final Stable)
+name: Build FFmpeg Android (Final Working)
 
 on:
   workflow_dispatch:
@@ -33,11 +33,12 @@ jobs:
 
           export ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME
           TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64
+          SYSROOT=$TOOLCHAIN/sysroot
 
           COMMON_FLAGS="\
           --target-os=android \
           --enable-cross-compile \
-          --sysroot=$TOOLCHAIN/sysroot \
+          --sysroot=$SYSROOT \
           --disable-static \
           --enable-shared \
           --disable-doc \
@@ -62,7 +63,8 @@ jobs:
           --enable-encoder=mp3 \
           --disable-vulkan \
           --disable-avdevice \
-          --extra-ldflags='-Wl,-z,max-page-size=16384'"
+          --extra-cflags='-fPIE' \
+          --extra-ldflags='-fPIE -pie -Wl,-z,max-page-size=16384'"
 
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
