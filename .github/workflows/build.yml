@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (Optimized Stable)
+name: Build FFmpeg Android (Final Stable)
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
           cd ffmpeg
           git checkout n6.0
 
-      - name: Build FFmpeg (Minimal Working)
+      - name: Build FFmpeg
         run: |
           cd ffmpeg
 
@@ -37,6 +37,7 @@ jobs:
           COMMON_FLAGS="\
           --target-os=android \
           --enable-cross-compile \
+          --sysroot=$TOOLCHAIN/sysroot \
           --disable-static \
           --enable-shared \
           --disable-doc \
@@ -65,10 +66,14 @@ jobs:
 
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
+          export AR=$TOOLCHAIN/bin/llvm-ar
+          export NM=$TOOLCHAIN/bin/llvm-nm
+          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           ./configure \
             --arch=arm64 \
             --cc=$CC \
+            --cross-prefix=$TOOLCHAIN/bin/aarch64-linux-android- \
             $COMMON_FLAGS
 
           make -j4
@@ -87,6 +92,7 @@ jobs:
           ./configure \
             --arch=arm \
             --cc=$CC \
+            --cross-prefix=$TOOLCHAIN/bin/arm-linux-androideabi- \
             $COMMON_FLAGS
 
           make -j4
