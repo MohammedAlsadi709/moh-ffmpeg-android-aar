@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (FINAL WORKING)
+name: Build FFmpeg Android (FINAL CLEAN FIX)
 
 on:
   workflow_dispatch:
@@ -46,37 +46,38 @@ jobs:
           export STRIP=$TOOLCHAIN/bin/llvm-strip
           export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
 
-          COMMON_FLAGS="\
-          --target-os=android \
-          --arch=aarch64 \
-          --cc=$CC \
-          --enable-cross-compile \
-          --disable-static \
-          --enable-shared \
-          --disable-programs \
-          --disable-doc \
-          --enable-gpl \
-          --enable-version3 \
-          --enable-avcodec \
-          --enable-avformat \
-          --enable-avutil \
-          --enable-swresample \
-          --enable-swscale \
-          --enable-avfilter \
-          --enable-postproc \
-          --enable-network \
-          --enable-protocols \
-          --enable-demuxers \
-          --enable-muxers \
-          --enable-encoders \
-          --enable-decoders \
-          --enable-parsers \
-          --enable-filters \
-          --enable-bsfs \
-          --extra-cflags='-fPIC' \
-          --extra-ldflags='-Wl,-z,max-page-size=16384 -lc -lm -ldl'"
+          EXTRA_CFLAGS="-fPIC"
+          EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384"
 
-          ./configure $COMMON_FLAGS
+          ./configure \
+            --target-os=android \
+            --arch=aarch64 \
+            --cc=$CC \
+            --enable-cross-compile \
+            --disable-static \
+            --enable-shared \
+            --disable-programs \
+            --disable-doc \
+            --enable-gpl \
+            --enable-version3 \
+            --enable-avcodec \
+            --enable-avformat \
+            --enable-avutil \
+            --enable-swresample \
+            --enable-swscale \
+            --enable-avfilter \
+            --enable-postproc \
+            --enable-network \
+            --enable-protocols \
+            --enable-demuxers \
+            --enable-muxers \
+            --enable-encoders \
+            --enable-decoders \
+            --enable-parsers \
+            --enable-filters \
+            --enable-bsfs \
+            --extra-cflags="$EXTRA_CFLAGS" \
+            --extra-ldflags="$EXTRA_LDFLAGS"
 
           make -j4
 
@@ -94,37 +95,35 @@ jobs:
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
           export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
 
-          COMMON_FLAGS_ARM="\
-          --target-os=android \
-          --arch=arm \
-          --cc=$CC \
-          --enable-cross-compile \
-          --disable-static \
-          --enable-shared \
-          --disable-programs \
-          --disable-doc \
-          --enable-gpl \
-          --enable-version3 \
-          --enable-avcodec \
-          --enable-avformat \
-          --enable-avutil \
-          --enable-swresample \
-          --enable-swscale \
-          --enable-avfilter \
-          --enable-postproc \
-          --enable-network \
-          --enable-protocols \
-          --enable-demuxers \
-          --enable-muxers \
-          --enable-encoders \
-          --enable-decoders \
-          --enable-parsers \
-          --enable-filters \
-          --enable-bsfs \
-          --extra-cflags='-fPIC' \
-          --extra-ldflags='-Wl,-z,max-page-size=16384 -lc -lm -ldl'"
-
-          ./configure $COMMON_FLAGS_ARM
+          ./configure \
+            --target-os=android \
+            --arch=arm \
+            --cc=$CC \
+            --enable-cross-compile \
+            --disable-static \
+            --enable-shared \
+            --disable-programs \
+            --disable-doc \
+            --enable-gpl \
+            --enable-version3 \
+            --enable-avcodec \
+            --enable-avformat \
+            --enable-avutil \
+            --enable-swresample \
+            --enable-swscale \
+            --enable-avfilter \
+            --enable-postproc \
+            --enable-network \
+            --enable-protocols \
+            --enable-demuxers \
+            --enable-muxers \
+            --enable-encoders \
+            --enable-decoders \
+            --enable-parsers \
+            --enable-filters \
+            --enable-bsfs \
+            --extra-cflags="$EXTRA_CFLAGS" \
+            --extra-ldflags="$EXTRA_LDFLAGS"
 
           make -j4
 
