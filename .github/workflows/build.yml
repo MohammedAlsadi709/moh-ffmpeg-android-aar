@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (FINAL STABLE)
+name: Build FFmpeg Android (LGPL SAFE)
 
 on:
   workflow_dispatch:
@@ -58,8 +58,10 @@ jobs:
             --enable-shared \
             --disable-programs \
             --disable-doc \
-            --enable-gpl \
-            --enable-version3 \
+            --enable-lgpl \
+            --disable-gpl \
+            --disable-version3 \
+            --disable-postproc \
             --disable-vulkan \
             --enable-avcodec \
             --enable-avformat \
@@ -67,7 +69,6 @@ jobs:
             --enable-swresample \
             --enable-swscale \
             --enable-avfilter \
-            --enable-postproc \
             --enable-network \
             --enable-protocols \
             --enable-demuxers \
@@ -105,8 +106,10 @@ jobs:
             --enable-shared \
             --disable-programs \
             --disable-doc \
-            --enable-gpl \
-            --enable-version3 \
+            --enable-lgpl \
+            --disable-gpl \
+            --disable-version3 \
+            --disable-postproc \
             --disable-vulkan \
             --enable-avcodec \
             --enable-avformat \
@@ -114,7 +117,6 @@ jobs:
             --enable-swresample \
             --enable-swscale \
             --enable-avfilter \
-            --enable-postproc \
             --enable-network \
             --enable-protocols \
             --enable-demuxers \
@@ -140,7 +142,7 @@ jobs:
       - name: Upload FFmpeg libs
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-libs-full
+          name: ffmpeg-libs-lgpl-safe
           path: |
             ffmpeg/output/arm64/lib/*.so
             ffmpeg/output/armv7/lib/*.so
