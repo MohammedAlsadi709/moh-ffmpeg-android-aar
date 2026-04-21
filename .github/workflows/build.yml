@@ -31,8 +31,16 @@ jobs:
         run: |
           cd ffmpeg
 
-          export NDK=$ANDROID_NDK_LATEST_HOME
+          # ✅ FIX: استخدام النسخة الصحيحة من NDK
+          export NDK=$ANDROID_NDK_HOME
           TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+          export API=21
+
+          # أدوات إضافية (تحل مشاكل linking)
+          export AR=$TOOLCHAIN/bin/llvm-ar
+          export AS=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
+          export LD=$TOOLCHAIN/bin/ld
+          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           COMMON_FLAGS="\
           --target-os=android \
@@ -63,7 +71,7 @@ jobs:
           --extra-ldflags='-Wl,-z,max-page-size=16384'"
 
           # ---------- arm64 ----------
-          export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
+          export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
 
           ./configure \
             $COMMON_FLAGS \
@@ -83,7 +91,7 @@ jobs:
           make clean
 
           # ---------- armv7 ----------
-          export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi21-clang
+          export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
 
           ./configure \
             $COMMON_FLAGS \
