@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (Final Stable Fixed)
+name: Build FFmpeg Android (Final No Install)
 
 on:
   workflow_dispatch:
@@ -36,10 +36,8 @@ jobs:
 
           # ---------- arm64 ----------
           export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
-          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           ./configure \
-            --prefix=$(pwd)/out/arm64 \
             --target-os=android \
             --arch=aarch64 \
             --cc=$CC \
@@ -71,15 +69,19 @@ jobs:
             --extra-ldflags="-Wl,-z,max-page-size=16384"
 
           make -j4
-          make install
+
+          mkdir -p output/arm64/lib
+          cp libavcodec/*.so output/arm64/lib/
+          cp libavformat/*.so output/arm64/lib/
+          cp libavutil/*.so output/arm64/lib/
+          cp libswresample/*.so output/arm64/lib/
+
           make clean
 
           # ---------- armv7 ----------
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi21-clang
-          export STRIP=$TOOLCHAIN/bin/llvm-strip
 
           ./configure \
-            --prefix=$(pwd)/out/armv7 \
             --target-os=android \
             --arch=arm \
             --cc=$CC \
@@ -89,4 +91,39 @@ jobs:
             --disable-programs \
             --disable-doc \
             --enable-small \
-            --
+            --enable-avcodec \
+            --enable-avformat \
+            --enable-avutil \
+            --enable-swresample \
+            --enable-swscale \
+            --enable-avfilter \
+            --enable-filter=volume \
+            --enable-filter=apulsator \
+            --enable-filter=amix \
+            --enable-filter=concat \
+            --enable-filter=atrim \
+            --enable-filter=adelay \
+            --enable-protocol=file \
+            --enable-demuxer=mp3 \
+            --enable-muxer=mp3 \
+            --enable-decoder=mp3 \
+            --enable-encoder=mp3 \
+            --disable-vulkan \
+            --disable-avdevice \
+            --extra-ldflags="-Wl,-z,max-page-size=16384"
+
+          make -j4
+
+          mkdir -p output/armv7/lib
+          cp libavcodec/*.so output/armv7/lib/
+          cp libavformat/*.so output/armv7/lib/
+          cp libavutil/*.so output/armv7/lib/
+          cp libswresample/*.so output/armv7/lib/
+
+      - name: Upload FFmpeg libs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-libs-optimized
+          path: |
+            ffmpeg/output/arm64/lib/*.so
+            ffmpeg/output/armv7/lib/*.so
