@@ -56,7 +56,6 @@ jobs:
             --enable-cross-compile \
             --disable-static \
             --enable-shared \
-            --enable-programs \
             --enable-ffmpeg \
             --disable-doc \
             --disable-vulkan \
@@ -104,7 +103,6 @@ jobs:
             --enable-cross-compile \
             --disable-static \
             --enable-shared \
-            --enable-programs \
             --enable-ffmpeg \
             --disable-doc \
             --disable-vulkan \
