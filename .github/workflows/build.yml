@@ -46,7 +46,7 @@ jobs:
           export STRIP=$TOOLCHAIN/bin/llvm-strip
           export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
 
-          EXTRA_CFLAGS="-fPIC -DANDROID"
+          EXTRA_CFLAGS="-fPIC"
           EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384"
 
           ./configure \
@@ -56,11 +56,8 @@ jobs:
             --enable-cross-compile \
             --disable-static \
             --enable-shared \
-            --enable-ffmpeg \
             --disable-doc \
             --disable-vulkan \
-            --disable-symver \
-            --enable-small \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -103,11 +100,9 @@ jobs:
             --enable-cross-compile \
             --disable-static \
             --enable-shared \
-            --enable-ffmpeg \
+            --disable-programs \
             --disable-doc \
             --disable-vulkan \
-            --disable-symver \
-            --enable-small \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
