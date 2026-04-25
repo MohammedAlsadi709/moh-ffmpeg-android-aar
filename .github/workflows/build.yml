@@ -54,7 +54,6 @@ jobs:
             --arch=aarch64 \
             --cc=$CC \
             --enable-cross-compile \
-            --enable-programs \
             --disable-static \
             --enable-shared \
             --strip=$STRIP \
