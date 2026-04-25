@@ -54,8 +54,10 @@ jobs:
             --arch=aarch64 \
             --cc=$CC \
             --enable-cross-compile \
+            --enable-programs \
             --disable-static \
             --enable-shared \
+            --strip=$STRIP \
             --disable-doc \
             --disable-vulkan \
             --enable-avcodec \
@@ -98,9 +100,10 @@ jobs:
             --arch=arm \
             --cc=$CC \
             --enable-cross-compile \
+            --enable-programs \
             --disable-static \
             --enable-shared \
-            --disable-programs \
+            --strip=$STRIP \
             --disable-doc \
             --disable-vulkan \
             --enable-avcodec \
