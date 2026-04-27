@@ -63,6 +63,7 @@ jobs:
             --disable-programs \
             --disable-doc \
             --disable-vulkan \
+            --disable-avdevice \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -83,8 +84,6 @@ jobs:
             --extra-ldflags="$EXTRA_LDFLAGS"
 
           make -j4
-
-          # ⭐⭐ هذا السطر الجديد المهم ⭐⭐
           make install DESTDIR=android-install/arm64
 
           mkdir -p output/arm64/lib
@@ -113,6 +112,7 @@ jobs:
             --disable-programs \
             --disable-doc \
             --disable-vulkan \
+            --disable-avdevice \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -133,8 +133,6 @@ jobs:
             --extra-ldflags="$EXTRA_LDFLAGS"
 
           make -j4
-
-          # ⭐⭐ هذا السطر الجديد المهم ⭐⭐
           make install DESTDIR=android-install/armv7
 
           mkdir -p output/armv7/lib
