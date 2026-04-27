@@ -39,8 +39,6 @@ jobs:
           TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           API=21
 
-          export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
-          export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
           export AR=$TOOLCHAIN/bin/llvm-ar
           export NM=$TOOLCHAIN/bin/llvm-nm
           export STRIP=$TOOLCHAIN/bin/llvm-strip
@@ -49,6 +47,12 @@ jobs:
           EXTRA_CFLAGS="-fPIC"
           EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384"
 
+          ############################
+          # -------- arm64 ----------
+          ############################
+          export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
+          export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
+
           ./configure \
             --target-os=android \
             --arch=aarch64 \
@@ -56,7 +60,7 @@ jobs:
             --enable-cross-compile \
             --disable-static \
             --enable-shared \
-            --strip=$STRIP \
+            --disable-programs \
             --disable-doc \
             --disable-vulkan \
             --enable-avcodec \
@@ -79,6 +83,9 @@ jobs:
             --extra-ldflags="$EXTRA_LDFLAGS"
 
           make -j4
+
+          # ⭐⭐ هذا السطر الجديد المهم ⭐⭐
+          make install DESTDIR=android-install/arm64
 
           mkdir -p output/arm64/lib
           cp libavcodec/*.so output/arm64/lib/
@@ -90,7 +97,9 @@ jobs:
 
           make clean
 
-          # ---------- armv7 ----------
+          ############################
+          # -------- armv7 ----------
+          ############################
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
           export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
 
@@ -99,10 +108,9 @@ jobs:
             --arch=arm \
             --cc=$CC \
             --enable-cross-compile \
-            --enable-programs \
             --disable-static \
             --enable-shared \
-            --strip=$STRIP \
+            --disable-programs \
             --disable-doc \
             --disable-vulkan \
             --enable-avcodec \
@@ -126,6 +134,9 @@ jobs:
 
           make -j4
 
+          # ⭐⭐ هذا السطر الجديد المهم ⭐⭐
+          make install DESTDIR=android-install/armv7
+
           mkdir -p output/armv7/lib
           cp libavcodec/*.so output/armv7/lib/
           cp libavformat/*.so output/armv7/lib/
@@ -134,10 +145,11 @@ jobs:
           cp libswscale/*.so output/armv7/lib/
           cp libavfilter/*.so output/armv7/lib/
 
-      - name: Upload FFmpeg libs
+      - name: Upload FFmpeg libs + headers
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-libs-full
+          name: ffmpeg-android-full
           path: |
             ffmpeg/output/arm64/lib/*.so
             ffmpeg/output/armv7/lib/*.so
+            ffmpeg/android-install/**/usr/include/**
