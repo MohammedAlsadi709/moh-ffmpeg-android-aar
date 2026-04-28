@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (FINAL FIXED)
+name: Build FFmpeg Android (LGPL ONLY - FINAL)
 
 on:
   workflow_dispatch:
@@ -31,7 +31,7 @@ jobs:
           cd ffmpeg
           git checkout n6.0
 
-      - name: Build FFmpeg
+      - name: Build FFmpeg (LGPL)
         run: |
           cd ffmpeg
 
@@ -39,9 +39,6 @@ jobs:
           TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
           API=21
 
-          # 🔥 أدوات NDK (مهم جدًا)
-          export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
-          export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
           export AR=$TOOLCHAIN/bin/llvm-ar
           export NM=$TOOLCHAIN/bin/llvm-nm
           export STRIP=$TOOLCHAIN/bin/llvm-strip
@@ -50,47 +47,46 @@ jobs:
           EXTRA_CFLAGS="-fPIC"
           EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384"
 
-          # ========================
-          # 🔥 ARM64 BUILD
-          # ========================
+          # ================= arm64 =================
+          export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
+          export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
+
           ./configure \
             --target-os=android \
             --arch=aarch64 \
             --cc=$CC \
-            --cxx=$CXX \
-            --ar=$AR \
-            --nm=$NM \
-            --strip=$STRIP \
-            --ranlib=$RANLIB \
             --enable-cross-compile \
-            --disable-static \
             --enable-shared \
+            --disable-static \
+            --enable-lgpl \
+            --disable-gpl \
+            --disable-nonfree \
+            --disable-programs \
             --disable-doc \
             --disable-vulkan \
+            --disable-debug \
+            --disable-everything \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
             --enable-swresample \
             --enable-swscale \
             --enable-avfilter \
-            --enable-postproc \
             --enable-network \
             --enable-protocols \
             --enable-demuxers \
             --enable-muxers \
-            --enable-encoders \
             --enable-decoders \
+            --enable-encoders \
             --enable-parsers \
             --enable-filters \
             --enable-bsfs \
             --extra-cflags="$EXTRA_CFLAGS" \
             --extra-ldflags="$EXTRA_LDFLAGS"
 
-          make -j4
+          make -j$(nproc)
 
           mkdir -p output/arm64/lib
-          mkdir -p output/arm64/bin
-
           cp libavcodec/*.so output/arm64/lib/
           cp libavformat/*.so output/arm64/lib/
           cp libavutil/*.so output/arm64/lib/
@@ -98,13 +94,9 @@ jobs:
           cp libswscale/*.so output/arm64/lib/
           cp libavfilter/*.so output/arm64/lib/
 
-          cp ffmpeg output/arm64/bin/
-
           make clean
 
-          # ========================
-          # 🔥 ARMv7 BUILD
-          # ========================
+          # ================= armv7 =================
           export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
           export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
 
@@ -112,40 +104,38 @@ jobs:
             --target-os=android \
             --arch=arm \
             --cc=$CC \
-            --cxx=$CXX \
-            --ar=$AR \
-            --nm=$NM \
-            --strip=$STRIP \
-            --ranlib=$RANLIB \
             --enable-cross-compile \
-            --disable-static \
             --enable-shared \
+            --disable-static \
+            --enable-lgpl \
+            --disable-gpl \
+            --disable-nonfree \
+            --disable-programs \
             --disable-doc \
             --disable-vulkan \
+            --disable-debug \
+            --disable-everything \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
             --enable-swresample \
             --enable-swscale \
             --enable-avfilter \
-            --enable-postproc \
             --enable-network \
             --enable-protocols \
             --enable-demuxers \
             --enable-muxers \
-            --enable-encoders \
             --enable-decoders \
+            --enable-encoders \
             --enable-parsers \
             --enable-filters \
             --enable-bsfs \
             --extra-cflags="$EXTRA_CFLAGS" \
             --extra-ldflags="$EXTRA_LDFLAGS"
 
-          make -j4
+          make -j$(nproc)
 
           mkdir -p output/armv7/lib
-          mkdir -p output/armv7/bin
-
           cp libavcodec/*.so output/armv7/lib/
           cp libavformat/*.so output/armv7/lib/
           cp libavutil/*.so output/armv7/lib/
@@ -153,12 +143,10 @@ jobs:
           cp libswscale/*.so output/armv7/lib/
           cp libavfilter/*.so output/armv7/lib/
 
-          cp ffmpeg output/armv7/bin/
-
-      - name: Upload FFmpeg Build
+      - name: Upload FFmpeg libs (LGPL)
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-full-build
+          name: ffmpeg-libs-lgpl
           path: |
-            ffmpeg/output/arm64/**
-            ffmpeg/output/armv7/**
+            ffmpeg/output/arm64/lib/*.so
+            ffmpeg/output/armv7/lib/*.so
