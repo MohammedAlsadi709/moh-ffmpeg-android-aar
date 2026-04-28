@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (LGPL ONLY - FIXED)
+name: Build FFmpeg Android (LGPL ONLY - FULL FIXED)
 
 on:
   workflow_dispatch:
@@ -139,15 +139,16 @@ jobs:
           cp libswscale/*.so output/armv7/lib/
           cp libavfilter/*.so output/armv7/lib/
 
-      # 🔥 Export headers + fftools (مع حل config.h)
-      - name: Export headers and fftools
+      # 🔥 EXPORT الكامل (المهم)
+      - name: Export FFmpeg Full Kit
         run: |
           cd ffmpeg
 
           mkdir -p export/include
           mkdir -p export/fftools
+          mkdir -p export/compat
 
-          # headers
+          # ================= headers =================
           cp -r libavcodec export/include/
           cp -r libavformat export/include/
           cp -r libavutil export/include/
@@ -155,7 +156,7 @@ jobs:
           cp -r libswscale export/include/
           cp -r libavfilter export/include/
 
-          # 🔥 حل config.h
+          # 🔥 config.h
           if [ -f ffbuild/config.h ]; then
             cp ffbuild/config.h export/include/
           elif [ -f config.h ]; then
@@ -165,11 +166,18 @@ jobs:
             exit 1
           fi
 
-          # fftools (CLI sources)
+          # 🔥 compat (حل مشكلة va_copy.h)
+          cp -r compat/* export/compat/
+
+          # ================= fftools =================
           cp fftools/ffmpeg.c export/fftools/
           cp fftools/cmdutils.c export/fftools/
           cp fftools/ffmpeg_opt.c export/fftools/
           cp fftools/ffmpeg_filter.c export/fftools/
+
+          # 🔥 الملفات الناقصة (سبب الانهيار عندك)
+          cp fftools/ffmpeg.h export/fftools/
+          cp fftools/cmdutils.h export/fftools/
 
       - name: Upload FFmpeg Full Kit
         uses: actions/upload-artifact@v4
