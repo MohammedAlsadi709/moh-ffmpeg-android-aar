@@ -174,13 +174,8 @@ jobs:
           # compat
           cp -r compat/* export/compat/
 
-          # fftools
-          cp fftools/ffmpeg.c export/fftools/
-          cp fftools/cmdutils.c export/fftools/
-          cp fftools/ffmpeg_opt.c export/fftools/
-          cp fftools/ffmpeg_filter.c export/fftools/
-          cp fftools/ffmpeg.h export/fftools/
-          cp fftools/cmdutils.h export/fftools/
+          # fftools (FIX 🔥)
+          cp -r fftools/* export/fftools/
 
       - name: Upload FFmpeg Full Kit
         uses: actions/upload-artifact@v4
