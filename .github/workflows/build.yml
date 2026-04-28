@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (LGPL ONLY - FULL FIXED)
+name: Build FFmpeg Android (LGPL ONLY - FULL FIXED + AVDEVICE)
 
 on:
   workflow_dispatch:
@@ -31,7 +31,7 @@ jobs:
           cd ffmpeg
           git checkout n6.0
 
-      - name: Build FFmpeg (LGPL)
+      - name: Build FFmpeg (LGPL + avdevice)
         run: |
           cd ffmpeg
 
@@ -64,6 +64,7 @@ jobs:
             --disable-doc \
             --disable-vulkan \
             --disable-debug \
+            --enable-avdevice \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -91,6 +92,7 @@ jobs:
           cp libswresample/*.so output/arm64/lib/
           cp libswscale/*.so output/arm64/lib/
           cp libavfilter/*.so output/arm64/lib/
+          cp libavdevice/*.so output/arm64/lib/
 
           make clean
 
@@ -111,6 +113,7 @@ jobs:
             --disable-doc \
             --disable-vulkan \
             --disable-debug \
+            --enable-avdevice \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -138,8 +141,9 @@ jobs:
           cp libswresample/*.so output/armv7/lib/
           cp libswscale/*.so output/armv7/lib/
           cp libavfilter/*.so output/armv7/lib/
+          cp libavdevice/*.so output/armv7/lib/
 
-      # 🔥 EXPORT الكامل (المهم)
+      # 🔥 EXPORT الكامل
       - name: Export FFmpeg Full Kit
         run: |
           cd ffmpeg
@@ -148,15 +152,16 @@ jobs:
           mkdir -p export/fftools
           mkdir -p export/compat
 
-          # ================= headers =================
+          # headers
           cp -r libavcodec export/include/
           cp -r libavformat export/include/
           cp -r libavutil export/include/
           cp -r libswresample export/include/
           cp -r libswscale export/include/
           cp -r libavfilter export/include/
+          cp -r libavdevice export/include/
 
-          # 🔥 config.h
+          # config.h
           if [ -f ffbuild/config.h ]; then
             cp ffbuild/config.h export/include/
           elif [ -f config.h ]; then
@@ -166,16 +171,14 @@ jobs:
             exit 1
           fi
 
-          # 🔥 compat (حل مشكلة va_copy.h)
+          # compat
           cp -r compat/* export/compat/
 
-          # ================= fftools =================
+          # fftools
           cp fftools/ffmpeg.c export/fftools/
           cp fftools/cmdutils.c export/fftools/
           cp fftools/ffmpeg_opt.c export/fftools/
           cp fftools/ffmpeg_filter.c export/fftools/
-
-          # 🔥 الملفات الناقصة (سبب الانهيار عندك)
           cp fftools/ffmpeg.h export/fftools/
           cp fftools/cmdutils.h export/fftools/
 
