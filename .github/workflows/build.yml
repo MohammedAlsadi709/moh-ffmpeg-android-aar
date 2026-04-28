@@ -1,4 +1,4 @@
-name: Build FFmpeg Android (LGPL ONLY - FINAL)
+name: Build FFmpeg Android (LGPL ONLY - FIXED)
 
 on:
   workflow_dispatch:
@@ -58,14 +58,12 @@ jobs:
             --enable-cross-compile \
             --enable-shared \
             --disable-static \
-            --enable-lgpl \
             --disable-gpl \
             --disable-nonfree \
             --disable-programs \
             --disable-doc \
             --disable-vulkan \
             --disable-debug \
-            --disable-everything \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -76,8 +74,8 @@ jobs:
             --enable-protocols \
             --enable-demuxers \
             --enable-muxers \
-            --enable-decoders \
             --enable-encoders \
+            --enable-decoders \
             --enable-parsers \
             --enable-filters \
             --enable-bsfs \
@@ -107,14 +105,12 @@ jobs:
             --enable-cross-compile \
             --enable-shared \
             --disable-static \
-            --enable-lgpl \
             --disable-gpl \
             --disable-nonfree \
             --disable-programs \
             --disable-doc \
             --disable-vulkan \
             --disable-debug \
-            --disable-everything \
             --enable-avcodec \
             --enable-avformat \
             --enable-avutil \
@@ -125,8 +121,8 @@ jobs:
             --enable-protocols \
             --enable-demuxers \
             --enable-muxers \
-            --enable-decoders \
             --enable-encoders \
+            --enable-decoders \
             --enable-parsers \
             --enable-filters \
             --enable-bsfs \
