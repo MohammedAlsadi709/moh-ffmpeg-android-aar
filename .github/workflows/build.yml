@@ -139,10 +139,36 @@ jobs:
           cp libswscale/*.so output/armv7/lib/
           cp libavfilter/*.so output/armv7/lib/
 
-      - name: Upload FFmpeg libs (LGPL)
+      # 🔥 المرحلة الجديدة (Export headers + fftools)
+      - name: Export headers and fftools
+        run: |
+          cd ffmpeg
+
+          mkdir -p export/include
+          mkdir -p export/fftools
+
+          # headers (من السورس + config)
+          cp -r libavcodec export/include/
+          cp -r libavformat export/include/
+          cp -r libavutil export/include/
+          cp -r libswresample export/include/
+          cp -r libswscale export/include/
+          cp -r libavfilter export/include/
+
+          cp ffbuild/config.h export/include/
+
+          # fftools (CLI source)
+          cp fftools/ffmpeg.c export/fftools/
+          cp fftools/cmdutils.c export/fftools/
+          cp fftools/ffmpeg_opt.c export/fftools/
+          cp fftools/ffmpeg_filter.c export/fftools/
+
+      # 🔥 رفع كل شيء
+      - name: Upload FFmpeg Full Kit
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-libs-lgpl
+          name: ffmpeg-full-kit
           path: |
             ffmpeg/output/arm64/lib/*.so
             ffmpeg/output/armv7/lib/*.so
+            ffmpeg/export/**/*
