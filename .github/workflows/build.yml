@@ -1,289 +1,153 @@
-name: Build FFmpeg Android (LGPL ONLY - FULL 6.0 No AvDevice)
+name: Build Ffmpeg Android (LGPL ONLY – FULL FIXED 4.4)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  Build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Install NDK r26
-        run: |
-          ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          mkdir -p $ANDROID_SDK_ROOT/ndk
-          cd $ANDROID_SDK_ROOT/ndk
-          wget https://dl.google.com/android/repository/android-ndk-r26d-linux.zip
-          unzip -q android-ndk-r26d-linux.zip
-          mv android-ndk-r26d r26
+    - name: Install NDK r26
+      run: |
+        ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+        mkdir -p $ANDROID_SDK_ROOT/ndk
+        cd $ANDROID_SDK_ROOT/ndk
+        wget https://dl.google.com/android/repository/android-ndk-r26d-linux.zip
+        unzip -q android-ndk-r26d-linux.zip
+        mv android-ndk-r26d r26
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y git build-essential yasm pkg-config nasm unzip wget curl tar autoconf automake libtool cmake
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git build-essential yasm pkg-config nasm unzip wget curl tar autoconf automake libtool
 
-      - name: Download External LGPL Dependencies
-        run: |
-          # LAME (MP3)
-          wget https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz
-          tar -xzf lame-3.100.tar.gz
+    - name: Download Audio Dependencies
+      run: |
+        wget https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz
+        tar -xzf lame-3.100.tar.gz
+        wget https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz
+        tar -xzf libogg-1.3.5.tar.gz
+        wget https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz
+        tar -xzf libvorbis-1.3.7.tar.gz
+        wget https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz
+        tar -xzf opus-1.4.tar.gz
+
+    - name: Clone Ffmpeg
+      run: |
+        git clone https://github.com/ffmpeg/ffmpeg.git
+        cd ffmpeg
+        git checkout n4.4
+
+    - name: Build Ffmpeg & External Libs
+      run: |
+        export NDK=/usr/local/lib/android/sdk/ndk/r26
+        export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+        export API=21
+        export AR=$TOOLCHAIN/bin/llvm-ar
+        export NM=$TOOLCHAIN/bin/llvm-nm
+        export STRIP=$TOOLCHAIN/bin/llvm-strip
+        export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+
+        EXTRA_CFLAGS="-fPIC"
+        EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384"
+        
+        WORKSPACE=$(pwd)
+        PREFIX_ARM64=$WORKSPACE/prefix_arm64
+        PREFIX_ARMV7=$WORKSPACE/prefix_armv7
+        
+        mkdir -p $PREFIX_ARM64
+        mkdir -p $PREFIX_ARMV7
+
+        # ================= arm64 =================
+        export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
+        export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
+
+        cd $WORKSPACE/lame-3.100
+        ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX
+        make -j$(nproc) && make install
+        
+        cd $WORKSPACE/libogg-1.3.5
+        ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX
+        make -j$(nproc) && make install
+        
+        cd $WORKSPACE/libvorbis-1.3.7
+        ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic --with-ogg=$PREFIX_ARM64 CC=$CC CXX=$CXX LDFLAGS="-L$PREFIX_ARM64/lib" CPPFLAGS="-I$PREFIX_ARM64/include"
+        make -j$(nproc) && make install
+        
+        cd $WORKSPACE/opus-1.4
+        ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX
+        make -j$(nproc) && make install
+
+        cd $WORKSPACE/ffmpeg
+        export PKG_CONFIG_LIBDIR=$PREFIX_ARM64/lib/pkgconfig
+        
+        ./configure \
+          --target-os=android --arch=aarch64 --cc=$CC --enable-cross-compile \
+          --enable-shared --disable-static --disable-gpl --disable-nonfree \
+          --disable-programs --disable-doc --disable-vulkan --disable-debug \
+          --disable-avdevice --enable-libmp3lame --enable-libopus --enable-libvorbis \
+          --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARM64/include" \
+          --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARM64/lib" \
+          --extra-libs="-lm"
+
+        make -j$(nproc)
+        mkdir -p output/arm64/lib
+        cp libavcodec/*.so output/arm64/lib/
+        cp libavformat/*.so output/arm64/lib/
+        cp libavutil/*.so output/arm64/lib/
+        cp libswresample/*.so output/arm64/lib/
+        cp libswscale/*.so output/arm64/lib/
+        cp libavfilter/*.so output/arm64/lib/
+        make clean
+
+        # ================= armv7 =================
+        export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
+        export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
+
+        cd $WORKSPACE/lame-3.100 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
+        cd $WORKSPACE/libogg-1.3.5 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
+        cd $WORKSPACE/libvorbis-1.3.7 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic --with-ogg=$PREFIX_ARMV7 CC=$CC CXX=$CXX LDFLAGS="-L$PREFIX_ARMV7/lib" CPPFLAGS="-I$PREFIX_ARMV7/include" && make -j$(nproc) && make install
+        cd $WORKSPACE/opus-1.4 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
+
+        cd $WORKSPACE/ffmpeg
+        export PKG_CONFIG_LIBDIR=$PREFIX_ARMV7/lib/pkgconfig
+        ./configure \
+          --target-os=android --arch=arm --cc=$CC --enable-cross-compile \
+          --enable-shared --disable-static --disable-gpl --disable-nonfree \
+          --disable-programs --disable-doc --disable-vulkan --disable-debug \
+          --disable-avdevice --enable-libmp3lame --enable-libopus --enable-libvorbis \
+          --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARMV7/include" \
+          --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARMV7/lib" \
+          --extra-libs="-lm"
+
+        make -j$(nproc)
+        mkdir -p output/armv7/lib
+        cp libavcodec/*.so output/armv7/lib/
+        cp libavformat/*.so output/armv7/lib/
+        cp libavutil/*.so output/armv7/lib/
+        cp libswresample/*.so output/armv7/lib/
+        cp libswscale/*.so output/armv7/lib/
+        cp libavfilter/*.so output/armv7/lib/
+
+    - name: Export Ffmpeg Full Kit
+      run: |
+        cd ffmpeg
+        mkdir -p export/include export/fftools export/compat
+        cp -r libavcodec libavformat libavutil libswresample libswscale libavfilter export/include/
+        cp config.h export/include/ || cp ffbuild/config.h export/include/
+        cp -r compat/* export/compat/
+        cp fftools/ffmpeg.c fftools/cmdutils.c fftools/ffmpeg_opt.c fftools/ffmpeg_filter.c fftools/*.h export/fftools/
+
+    - name: Upload Ffmpeg Full Kit
+      uses: actions/upload-artifact@v4
+      with:
+        name: ffmpeg-4.4-kit
+        path: |
+          ffmpeg/output/arm64/lib/*.so
+          ffmpeg/output/armv7/lib/*.so
+          ffmpeg/export/**/*
           
-          # OGG
-          wget https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz
-          tar -xzf libogg-1.3.5.tar.gz
-          
-          # VORBIS
-          wget https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz
-          tar -xzf libvorbis-1.3.7.tar.gz
-          
-          # OPUS
-          wget https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz
-          tar -xzf opus-1.4.tar.gz
-
-          # FREETYPE (للخطوط والنصوص)
-          wget https://download.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.gz
-          tar -xzf freetype-2.13.2.tar.gz
-
-          # SPEEX
-          wget https://downloads.xiph.org/releases/speex/speex-1.2.1.tar.gz
-          tar -xzf speex-1.2.1.tar.gz
-
-          # OpenCORE-AMR (لصيغ AMR الخاصة بالموبايل)
-          wget https://sourceforge.net/projects/opencore-amr/files/opencore-amr/opencore-amr-0.1.6.tar.gz
-          tar -xzf opencore-amr-0.1.6.tar.gz
-
-          # TwoLAME (MP2)
-          wget https://sourceforge.net/projects/twolame/files/twolame/0.4.0/twolame-0.4.0.tar.gz
-          tar -xzf twolame-0.4.0.tar.gz
-
-      - name: Clone FFmpeg
-        run: |
-          git clone https://github.com/ffmpeg/ffmpeg.git
-          cd ffmpeg
-          git checkout n6.0
-
-      - name: Build FFmpeg & External Libs
-        run: |
-          export NDK=/usr/local/lib/android/sdk/ndk/r26
-          export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
-          export API=21
-          export AR=$TOOLCHAIN/bin/llvm-ar
-          export NM=$TOOLCHAIN/bin/llvm-nm
-          export STRIP=$TOOLCHAIN/bin/llvm-strip
-          export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
-
-          EXTRA_CFLAGS="-fPIC"
-          EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384"
-          
-          WORKSPACE=$(pwd)
-          PREFIX_ARM64=$WORKSPACE/prefix_arm64
-          PREFIX_ARMV7=$WORKSPACE/prefix_armv7
-          
-          mkdir -p $PREFIX_ARM64
-          mkdir -p $PREFIX_ARMV7
-
-          # ================= ARM64 =================
-          export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
-          export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
-
-          cd $WORKSPACE/lame-3.100 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/libogg-1.3.5 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/libvorbis-1.3.7 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic --with-ogg=$PREFIX_ARM64 CC=$CC CXX=$CXX LDFLAGS="-L$PREFIX_ARM64/lib" CPPFLAGS="-I$PREFIX_ARM64/include" && make -j$(nproc) && make install
-          cd $WORKSPACE/opus-1.4 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/freetype-2.13.2 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic --without-zlib --without-bzip2 --without-png --without-harfbuzz CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/speex-1.2.1 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic --disable-binaries CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/opencore-amr-0.1.6 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/twolame-0.4.0 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-
-          # --- Build FFmpeg (ARM64) ---
-          cd $WORKSPACE/ffmpeg
-          export PKG_CONFIG_DIR=
-          export PKG_CONFIG_LIBDIR=$PREFIX_ARM64/lib/pkgconfig
-          export PKG_CONFIG_PATH=$PREFIX_ARM64/lib/pkgconfig
-          
-          ./configure \
-            --target-os=android \
-            --arch=aarch64 \
-            --cc=$CC \
-            --enable-cross-compile \
-            --enable-shared \
-            --disable-static \
-            --disable-gpl \
-            --disable-nonfree \
-            --disable-programs \
-            --disable-doc \
-            --disable-debug \
-            --disable-vulkan \
-            --disable-avdevice \
-            --enable-avcodec \
-            --enable-avformat \
-            --enable-avutil \
-            --enable-swresample \
-            --enable-swscale \
-            --enable-avfilter \
-            --enable-network \
-            --enable-protocols \
-            --enable-jni \
-            --enable-mediacodec \
-            --enable-hwaccels \
-            --enable-libmp3lame \
-            --enable-libopus \
-            --enable-libvorbis \
-            --enable-libfreetype \
-            --enable-libspeex \
-            --enable-libopencore-amrnb \
-            --enable-libopencore-amrwb \
-            --enable-libtwolame \
-            --pkg-config-flags="--static" \
-            --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARM64/include" \
-            --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARM64/lib" \
-            --extra-libs="-lm"
-
-          make -j$(nproc)
-
-          mkdir -p output/arm64/lib
-          cp libavcodec/*.so output/arm64/lib/
-          cp libavformat/*.so output/arm64/lib/
-          cp libavutil/*.so output/arm64/lib/
-          cp libswresample/*.so output/arm64/lib/
-          cp libswscale/*.so output/arm64/lib/
-          cp libavfilter/*.so output/arm64/lib/
-
-          make clean
-
-          # ================= ARMV7 =================
-          export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
-          export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
-
-          cd $WORKSPACE/lame-3.100 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/libogg-1.3.5 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/libvorbis-1.3.7 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic --with-ogg=$PREFIX_ARMV7 CC=$CC CXX=$CXX LDFLAGS="-L$PREFIX_ARMV7/lib" CPPFLAGS="-I$PREFIX_ARMV7/include" && make -j$(nproc) && make install
-          cd $WORKSPACE/opus-1.4 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/freetype-2.13.2 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic --without-zlib --without-bzip2 --without-png --without-harfbuzz CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/speex-1.2.1 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic --disable-binaries CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/opencore-amr-0.1.6 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-          cd $WORKSPACE/twolame-0.4.0 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-
-          # --- Build FFmpeg (ARMV7) ---
-          cd $WORKSPACE/ffmpeg
-          export PKG_CONFIG_DIR=
-          export PKG_CONFIG_LIBDIR=$PREFIX_ARMV7/lib/pkgconfig
-          export PKG_CONFIG_PATH=$PREFIX_ARMV7/lib/pkgconfig
-
-          ./configure \
-            --target-os=android \
-            --arch=arm \
-            --cc=$CC \
-            --enable-cross-compile \
-            --enable-shared \
-            --disable-static \
-            --disable-gpl \
-            --disable-nonfree \
-            --disable-programs \
-            --disable-doc \
-            --disable-debug \
-            --disable-vulkan \
-            --disable-avdevice \
-            --enable-avcodec \
-            --enable-avformat \
-            --enable-avutil \
-            --enable-swresample \
-            --enable-swscale \
-            --enable-avfilter \
-            --enable-network \
-            --enable-protocols \
-            --enable-jni \
-            --enable-mediacodec \
-            --enable-hwaccels \
-            --enable-libmp3lame \
-            --enable-libopus \
-            --enable-libvorbis \
-            --enable-libfreetype \
-            --enable-libspeex \
-            --enable-libopencore-amrnb \
-            --enable-libopencore-amrwb \
-            --enable-libtwolame \
-            --pkg-config-flags="--static" \
-            --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARMV7/include" \
-            --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARMV7/lib" \
-            --extra-libs="-lm"
-
-          make -j$(nproc)
-
-          mkdir -p output/armv7/lib
-          cp libavcodec/*.so output/armv7/lib/
-          cp libavformat/*.so output/armv7/lib/
-          cp libavutil/*.so output/armv7/lib/
-          cp libswresample/*.so output/armv7/lib/
-          cp libswscale/*.so output/armv7/lib/
-          cp libavfilter/*.so output/armv7/lib/
-
-      # 🔥 EXPORT الكامل
-      - name: Export FFmpeg Full Kit
-        run: |
-          cd ffmpeg
-
-          mkdir -p export/include
-          mkdir -p export/fftools
-          mkdir -p export/compat
-
-          # ================= headers =================
-          cp -r libavcodec export/include/
-          cp -r libavformat export/include/
-          cp -r libavutil export/include/
-          cp -r libswresample export/include/
-          cp -r libswscale export/include/
-          cp -r libavfilter export/include/
-          
-          # تم إزالة تصدير libavdevice هنا لتجنب أي تعارض في Android Studio
-
-          # 🔥 config.h 
-          if [ -f ffbuild/config.h ]; then
-            cp ffbuild/config.h export/include/
-          elif [ -f config.h ]; then
-            cp config.h export/include/
-          fi
-          
-          # 🔥 حقن كود إصلاح تعدد المعماريات في config.h
-          echo "" >> export/include/config.h
-          echo "/* --- FFmpeg 6.0 Android Multi-Arch Fix --- */" >> export/include/config.h
-          echo "#undef ARCH_ARM" >> export/include/config.h
-          echo "#undef ARCH_AARCH64" >> export/include/config.h
-          echo "#undef HAVE_INLINE_ASM" >> export/include/config.h
-          echo "#ifdef __aarch64__" >> export/include/config.h
-          echo "    #define ARCH_AARCH64 1" >> export/include/config.h
-          echo "    #define ARCH_ARM 0" >> export/include/config.h
-          echo "#else" >> export/include/config.h
-          echo "    #define ARCH_AARCH64 0" >> export/include/config.h
-          echo "    #define ARCH_ARM 1" >> export/include/config.h
-          echo "#endif" >> export/include/config.h
-
-          # 🔥 compat
-          cp -r compat/* export/compat/
-
-          # ================= fftools =================
-          cp fftools/ffmpeg.c export/fftools/
-          cp fftools/cmdutils.c export/fftools/
-          cp fftools/ffmpeg_opt.c export/fftools/
-          cp fftools/ffmpeg_filter.c export/fftools/
-          cp fftools/ffmpeg_demux.c export/fftools/
-          cp fftools/ffmpeg_hw.c export/fftools/
-          cp fftools/ffmpeg_mux.c export/fftools/
-          cp fftools/ffmpeg_mux_init.c export/fftools/
-          cp fftools/opt_common.c export/fftools/
-          cp fftools/objpool.c export/fftools/
-          cp fftools/sync_queue.c export/fftools/
-          cp fftools/thread_queue.c export/fftools/
-          cp fftools/*.h export/fftools/
-
-      - name: Upload FFmpeg Full Kit
-        uses: actions/upload-artifact@v4
-        with:
-          name: ffmpeg-full-kit
-          path: |
-            ffmpeg/output/arm64/lib/*.so
-            ffmpeg/output/armv7/lib/*.so
-            ffmpeg/export/**/*
