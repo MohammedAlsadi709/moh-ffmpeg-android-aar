@@ -141,7 +141,7 @@ jobs:
           cp libswscale/*.so output/armv7/lib/
           cp libavfilter/*.so output/armv7/lib/
 
-      # 🔥 EXPORT الكامل (المهم)
+      # 🔥 EXPORT الكامل
       - name: Export FFmpeg Full Kit
         run: |
           cd ffmpeg
@@ -159,15 +159,26 @@ jobs:
           cp -r libavfilter export/include/
           cp -r libavdevice export/include/
 
-          # 🔥 config.h
+          # 🔥 config.h 
           if [ -f ffbuild/config.h ]; then
             cp ffbuild/config.h export/include/
           elif [ -f config.h ]; then
             cp config.h export/include/
-          else
-            echo "config.h not found!"
-            exit 1
           fi
+          
+          # 🔥 حقن كود إصلاح تعدد المعماريات في config.h ليتم استخدامه في Android Studio
+          echo "" >> export/include/config.h
+          echo "/* --- FFmpeg 6.0 Android Multi-Arch Fix --- */" >> export/include/config.h
+          echo "#undef ARCH_ARM" >> export/include/config.h
+          echo "#undef ARCH_AARCH64" >> export/include/config.h
+          echo "#undef HAVE_INLINE_ASM" >> export/include/config.h
+          echo "#ifdef __aarch64__" >> export/include/config.h
+          echo "    #define ARCH_AARCH64 1" >> export/include/config.h
+          echo "    #define ARCH_ARM 0" >> export/include/config.h
+          echo "#else" >> export/include/config.h
+          echo "    #define ARCH_AARCH64 0" >> export/include/config.h
+          echo "    #define ARCH_ARM 1" >> export/include/config.h
+          echo "#endif" >> export/include/config.h
 
           # 🔥 compat (حل مشكلة va_copy.h)
           cp -r compat/* export/compat/
@@ -177,6 +188,16 @@ jobs:
           cp fftools/cmdutils.c export/fftools/
           cp fftools/ffmpeg_opt.c export/fftools/
           cp fftools/ffmpeg_filter.c export/fftools/
+          
+          # 🔥 الملفات الإضافية الضرورية في إصدار 6.0
+          cp fftools/ffmpeg_demux.c export/fftools/
+          cp fftools/ffmpeg_hw.c export/fftools/
+          cp fftools/ffmpeg_mux.c export/fftools/
+          cp fftools/ffmpeg_mux_init.c export/fftools/
+          cp fftools/opt_common.c export/fftools/
+          cp fftools/objpool.c export/fftools/
+          cp fftools/sync_queue.c export/fftools/
+          cp fftools/thread_queue.c export/fftools/
 
           # 🔥 سحب كافة الهيدرز الناقصة مثل sync_queue.h 
           cp fftools/*.h export/fftools/
