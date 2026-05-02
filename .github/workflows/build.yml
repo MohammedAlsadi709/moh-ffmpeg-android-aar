@@ -95,6 +95,9 @@ jobs:
 
         # --- Build FFmpeg (arm64) ---
         cd $WORKSPACE/ffmpeg
+        
+        export PKG_CONFIG_DIR=
+        export PKG_CONFIG_LIBDIR=$PREFIX_ARM64/lib/pkgconfig
         export PKG_CONFIG_PATH=$PREFIX_ARM64/lib/pkgconfig
         
         ./configure \
@@ -129,6 +132,7 @@ jobs:
           --enable-libmp3lame \
           --enable-libopus \
           --enable-libvorbis \
+          --pkg-config-flags="--static" \
           --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARM64/include" \
           --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARM64/lib" \
           --extra-libs="-lm"
@@ -177,6 +181,9 @@ jobs:
 
         # --- Build FFmpeg (armv7) ---
         cd $WORKSPACE/ffmpeg
+        
+        export PKG_CONFIG_DIR=
+        export PKG_CONFIG_LIBDIR=$PREFIX_ARMV7/lib/pkgconfig
         export PKG_CONFIG_PATH=$PREFIX_ARMV7/lib/pkgconfig
 
         ./configure \
@@ -211,6 +218,7 @@ jobs:
           --enable-libmp3lame \
           --enable-libopus \
           --enable-libvorbis \
+          --pkg-config-flags="--static" \
           --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARMV7/include" \
           --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARMV7/lib" \
           --extra-libs="-lm"
