@@ -65,26 +65,30 @@ jobs:
         # ================= arm64 =================
         export CC=$TOOLCHAIN/bin/aarch64-linux-android$API-clang
         export CXX=$TOOLCHAIN/bin/aarch64-linux-android$API-clang++
+        export PKG_CONFIG_LIBDIR=$PREFIX_ARM64/lib/pkgconfig
 
+        # Build LAME
         cd $WORKSPACE/lame-3.100
         ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX
         make -j$(nproc) && make install
         
+        # Build OGG
         cd $WORKSPACE/libogg-1.3.5
         ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX
         make -j$(nproc) && make install
         
+        # Build VORBIS (يستخدم مسار OGG من PKG_CONFIG_LIBDIR)
         cd $WORKSPACE/libvorbis-1.3.7
         ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic --with-ogg=$PREFIX_ARM64 CC=$CC CXX=$CXX LDFLAGS="-L$PREFIX_ARM64/lib" CPPFLAGS="-I$PREFIX_ARM64/include"
         make -j$(nproc) && make install
         
+        # Build OPUS
         cd $WORKSPACE/opus-1.4
         ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX
         make -j$(nproc) && make install
 
+        # Build Ffmpeg arm64
         cd $WORKSPACE/ffmpeg
-        export PKG_CONFIG_LIBDIR=$PREFIX_ARM64/lib/pkgconfig
-        
         ./configure \
           --target-os=android --arch=aarch64 --cc=$CC --enable-cross-compile \
           --enable-shared --disable-static --disable-gpl --disable-nonfree \
@@ -93,20 +97,15 @@ jobs:
           --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARM64/include" \
           --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARM64/lib" \
           --extra-libs="-lm"
-
         make -j$(nproc)
         mkdir -p output/arm64/lib
-        cp libavcodec/*.so output/arm64/lib/
-        cp libavformat/*.so output/arm64/lib/
-        cp libavutil/*.so output/arm64/lib/
-        cp libswresample/*.so output/arm64/lib/
-        cp libswscale/*.so output/arm64/lib/
-        cp libavfilter/*.so output/arm64/lib/
+        cp libavcodec/*.so libavformat/*.so libavutil/*.so libswresample/*.so libswscale/*.so libavfilter/*.so output/arm64/lib/
         make clean
 
         # ================= armv7 =================
         export CC=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang
         export CXX=$TOOLCHAIN/bin/armv7a-linux-androideabi$API-clang++
+        export PKG_CONFIG_LIBDIR=$PREFIX_ARMV7/lib/pkgconfig
 
         cd $WORKSPACE/lame-3.100 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
         cd $WORKSPACE/libogg-1.3.5 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
@@ -114,7 +113,6 @@ jobs:
         cd $WORKSPACE/opus-1.4 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
 
         cd $WORKSPACE/ffmpeg
-        export PKG_CONFIG_LIBDIR=$PREFIX_ARMV7/lib/pkgconfig
         ./configure \
           --target-os=android --arch=arm --cc=$CC --enable-cross-compile \
           --enable-shared --disable-static --disable-gpl --disable-nonfree \
@@ -123,15 +121,9 @@ jobs:
           --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARMV7/include" \
           --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARMV7/lib" \
           --extra-libs="-lm"
-
         make -j$(nproc)
         mkdir -p output/armv7/lib
-        cp libavcodec/*.so output/armv7/lib/
-        cp libavformat/*.so output/armv7/lib/
-        cp libavutil/*.so output/armv7/lib/
-        cp libswresample/*.so output/armv7/lib/
-        cp libswscale/*.so output/armv7/lib/
-        cp libavfilter/*.so output/armv7/lib/
+        cp libavcodec/*.so libavformat/*.so libavutil/*.so libswresample/*.so libswscale/*.so libavfilter/*.so output/armv7/lib/
 
     - name: Export Ffmpeg Full Kit
       run: |
@@ -140,12 +132,13 @@ jobs:
         cp -r libavcodec libavformat libavutil libswresample libswscale libavfilter export/include/
         cp config.h export/include/ || cp ffbuild/config.h export/include/
         cp -r compat/* export/compat/
+        # في 4.4 نكتفي بهذه الملفات الأربعة الأساسية لـ fftools
         cp fftools/ffmpeg.c fftools/cmdutils.c fftools/ffmpeg_opt.c fftools/ffmpeg_filter.c fftools/*.h export/fftools/
 
     - name: Upload Ffmpeg Full Kit
       uses: actions/upload-artifact@v4
       with:
-        name: ffmpeg-4.4-kit
+        name: ffmpeg-4.4-fixed
         path: |
           ffmpeg/output/arm64/lib/*.so
           ffmpeg/output/armv7/lib/*.so
