@@ -69,23 +69,23 @@ jobs:
 
         cd $WORKSPACE/lame-3.100 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
         cd $WORKSPACE/libogg-1.3.5 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
-        # بناء vorbis مع تحديد مسار ogg بدقة
         cd $WORKSPACE/libvorbis-1.3.7 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic --with-ogg=$PREFIX_ARM64 CC=$CC CXX=$CXX && make -j$(nproc) && make install
         cd $WORKSPACE/opus-1.4 && ./configure --host=aarch64-linux-android --prefix=$PREFIX_ARM64 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
 
         cd $WORKSPACE/ffmpeg
+        # 🔥 تم إزالة --disable-avdevice
         ./configure \
           --target-os=android --arch=aarch64 --cc=$CC --enable-cross-compile \
           --enable-shared --disable-static --disable-gpl --disable-nonfree \
           --disable-programs --disable-doc --disable-vulkan --disable-debug \
-          --disable-avdevice \
           --enable-libmp3lame --enable-libopus --enable-libvorbis \
           --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARM64/include" \
           --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARM64/lib" \
-          --extra-libs="-lm -lvorbis -logg" # إضافة الربط اليدوي لـ vorbis و ogg
+          --extra-libs="-lm -lvorbis -logg" 
         make -j$(nproc)
         mkdir -p output/arm64/lib
-        cp libavcodec/*.so libavformat/*.so libavutil/*.so libswresample/*.so libswscale/*.so libavfilter/*.so output/arm64/lib/
+        # 🔥 تم إضافة libavdevice/*.so
+        cp libavcodec/*.so libavformat/*.so libavutil/*.so libswresample/*.so libswscale/*.so libavfilter/*.so libavdevice/*.so output/arm64/lib/
         make clean
 
         # ================= armv7 =================
@@ -99,27 +99,30 @@ jobs:
         cd $WORKSPACE/opus-1.4 && make clean && ./configure --host=arm-linux-androideabi --prefix=$PREFIX_ARMV7 --disable-shared --enable-static --with-pic CC=$CC CXX=$CXX && make -j$(nproc) && make install
 
         cd $WORKSPACE/ffmpeg
+        # 🔥 تم إزالة --disable-avdevice
         ./configure \
           --target-os=android --arch=arm --cc=$CC --enable-cross-compile \
           --enable-shared --disable-static --disable-gpl --disable-nonfree \
           --disable-programs --disable-doc --disable-vulkan --disable-debug \
-          --disable-avdevice \
           --enable-libmp3lame --enable-libopus --enable-libvorbis \
           --extra-cflags="$EXTRA_CFLAGS -I$PREFIX_ARMV7/include" \
           --extra-ldflags="$EXTRA_LDFLAGS -L$PREFIX_ARMV7/lib" \
           --extra-libs="-lm -lvorbis -logg"
         make -j$(nproc)
         mkdir -p output/armv7/lib
-        cp libavcodec/*.so libavformat/*.so libavutil/*.so libswresample/*.so libswscale/*.so libavfilter/*.so output/armv7/lib/
+        # 🔥 تم إضافة libavdevice/*.so
+        cp libavcodec/*.so libavformat/*.so libavutil/*.so libswresample/*.so libswscale/*.so libavfilter/*.so libavdevice/*.so output/armv7/lib/
 
     - name: Export Ffmpeg Full Kit
       run: |
         cd ffmpeg
         mkdir -p export/include export/fftools export/compat
-        cp -r libavcodec libavformat libavutil libswresample libswscale libavfilter export/include/
+        # 🔥 تم إضافة libavdevice
+        cp -r libavcodec libavformat libavutil libswresample libswscale libavfilter libavdevice export/include/
         cp config.h export/include/ || cp ffbuild/config.h export/include/
         cp -r compat/* export/compat/
-        cp fftools/ffmpeg.c fftools/cmdutils.c fftools/ffmpeg_opt.c fftools/ffmpeg_filter.c fftools/*.h export/fftools/
+        # 🔥 تم إضافة ffmpeg_hw.c
+        cp fftools/ffmpeg.c fftools/cmdutils.c fftools/ffmpeg_opt.c fftools/ffmpeg_filter.c fftools/ffmpeg_hw.c fftools/*.h export/fftools/
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
